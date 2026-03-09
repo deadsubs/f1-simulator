@@ -90,30 +90,33 @@ function buildQualifyingData(qualifyingOrder, drivers, teams, weather, seed) {
 
   const fmt = (s) => { const m = Math.floor(s / 60); return m + ":" + (s % 60).toFixed(3).padStart(6, "0"); };
 
-  const scoreToTime = (score, maxScore, minScore, deltaImprovement) => {
+ const scoreToTime = (score, maxScore, minScore, deltaImprovement) => {
     const norm = maxScore === minScore ? 0.5 : (score - minScore) / (maxScore - minScore);
-    return baseTime + spread * (1 - norm) - deltaImprovement + (Math.random() * 0.18 - 0.09);
+    return baseTime + spread * (1 - norm) - deltaImprovement;
   };
 
   const q1Scores = qualifyingOrder.map((id) => ({ id, score: scoreDriver(id, "q1") }));
   const q1Max = Math.max(...q1Scores.map((s) => s.score));
   const q1Min = Math.min(...q1Scores.map((s) => s.score));
   const q1Sorted = [...q1Scores].sort((a, b) => b.score - a.score);
-  const q1 = q1Sorted.map((s, i) => ({ driverId: s.id, time: fmt(scoreToTime(s.score, q1Max, q1Min, 0)), eliminated: i >= 15, pos: i + 1 }));
+  const q1Times = q1Sorted.map((s) => scoreToTime(s.score, q1Max, q1Min, 0));
+  const q1 = q1Sorted.map((s, i) => ({ driverId: s.id, time: fmt(q1Times[i]), gap: i === 0 ? null : "+" + (q1Times[i] - q1Times[0]).toFixed(3), eliminated: i >= 15, pos: i + 1 }));
 
   const q2Pool = q1Sorted.slice(0, 15).map((s) => s.id);
   const q2Scores = q2Pool.map((id) => ({ id, score: scoreDriver(id, "q2") }));
   const q2Max = Math.max(...q2Scores.map((s) => s.score));
   const q2Min = Math.min(...q2Scores.map((s) => s.score));
   const q2Sorted = [...q2Scores].sort((a, b) => b.score - a.score);
-  const q2 = q2Sorted.map((s, i) => ({ driverId: s.id, time: fmt(scoreToTime(s.score, q2Max, q2Min, 0.28)), eliminated: i >= 10, pos: i + 1 }));
+  const q2Times = q2Sorted.map((s) => scoreToTime(s.score, q2Max, q2Min, 0.28));
+  const q2 = q2Sorted.map((s, i) => ({ driverId: s.id, time: fmt(q2Times[i]), gap: i === 0 ? null : "+" + (q2Times[i] - q2Times[0]).toFixed(3), eliminated: i >= 10, pos: i + 1 }));
 
   const q3Pool = q2Sorted.slice(0, 10).map((s) => s.id);
   const q3Scores = q3Pool.map((id) => ({ id, score: scoreDriver(id, "q3") }));
   const q3Max = Math.max(...q3Scores.map((s) => s.score));
   const q3Min = Math.min(...q3Scores.map((s) => s.score));
   const q3Sorted = [...q3Scores].sort((a, b) => b.score - a.score);
-  const q3 = q3Sorted.map((s, i) => ({ driverId: s.id, time: fmt(scoreToTime(s.score, q3Max, q3Min, 0.52)), eliminated: false, pos: i + 1 }));
+  const q3Times = q3Sorted.map((s) => scoreToTime(s.score, q3Max, q3Min, 0.52));
+  const q3 = q3Sorted.map((s, i) => ({ driverId: s.id, time: fmt(q3Times[i]), gap: i === 0 ? null : "+" + (q3Times[i] - q3Times[0]).toFixed(3), eliminated: false, pos: i + 1 }));
 
   return { q1, q2, q3 };
 }
@@ -614,6 +617,9 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
                 <td className="pr-2 py-2 text-right font-mono text-xs" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
                   {isPole && "🏆 "}{row.time}
                 </td>
+                <td className="pr-2 py-2 text-right font-mono text-xs w-20" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {row.gap ?? ""}
+                </td>
                 <td className="pr-3 py-2 w-10">
                   {row.eliminated && <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(225,6,0,0.25)", color: F1_RED }}>OUT</span>}
                 </td>
@@ -778,7 +784,7 @@ function RaceResultsTable({ results, drivers, teams, focusDriverId }) {
                 {r.dnf && <span className="ml-2 text-xs text-red-400">{r.dnfReason ?? "DNF"}</span>}
               </td>
               <td className="py-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{t?.name}</td>
-              <td className="py-2 text-right text-xs font-mono" style={{ color: "rgba(255,255,255,0.6)" }}>{r.dnf ? "" : r.gap ?? ""}</td>
+               <td className="py-2 text-right text-xs font-mono" style={{ color: r.position === 1 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)" }}>{r.dnf ? "" : r.position === 1 ? "WINNER" : r.gap ?? ""}</td>
               <td className="pr-4 py-2 text-right font-bold" style={{ color: r.points > 0 ? "#fff" : "rgba(255,255,255,0.3)" }}>{r.dnf ? "" : (r.points ?? 0)}</td>
             </tr>
           );
@@ -1384,9 +1390,6 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
   );
 }
 
-// ─── FINALE SCREEN
-
-// ─── FINALE SCREEN
 
 // ─── FINALE SCREEN ────────────────────────────────────────────────────────
 function FinaleScreen({ seasonResults, driverStandings, constructorStandings, focusDriverId, onPlayAgain }) {
@@ -1438,7 +1441,6 @@ function FinaleScreen({ seasonResults, driverStandings, constructorStandings, fo
 
   return (
     <div className="min-h-screen text-white" style={{ background: BG_DARK, fontFamily: "var(--font-titillium)" }}>
-  <RaceActionBar round={round} totalRounds={TOTAL_ROUNDS} onNextRace={onNextRace} onSimulateToEnd={onSimulateToEnd} onFinishSeason={onFinishSeason} />
       <div className="border-b" style={{ borderColor: PANEL_BORDER }}>
         <div className="max-w-5xl mx-auto px-4 pt-10 pb-4 text-center">
           <p className="text-xs uppercase tracking-widest text-white/40 mb-1">2026 Season Complete</p>
