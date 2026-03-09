@@ -1324,13 +1324,14 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
               );
             })()}
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>RACE REPORT</span></div>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>
+              RACE REPORT</span></div>
               <div className="p-5" style={{ background: "#0e0e22" }}>
-                
-                {reportLoading
-                  ? <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
-                  : <RaceReportBody text={report} />
-              </div>
+  {reportLoading
+    ? <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
+    : <RaceReportBody text={report} />
+  }
+</div>
             </div>
             {!radioLoading && (radioWinner || radioFocus) && (
               <div className="space-y-3">
