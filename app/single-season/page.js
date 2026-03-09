@@ -1328,10 +1328,10 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
               RACE REPORT</span></div>
               <div className="p-5" style={{ background: "#0e0e22" }}>
   {reportLoading
-    ? <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
-    : <RaceReportBody text={report} />
-  }
-</div>
+                  ? <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
+                  : <RaceReportBody text={report} />
+                }
+              </div>
             </div>
             {!radioLoading && (radioWinner || radioFocus) && (
               <div className="space-y-3">
@@ -1341,10 +1341,22 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
             )}
           </div>
         )}
+
       </div>
+
+      <RaceActionBar
+        round={round}
+        totalRounds={TOTAL_ROUNDS}
+        onNextRace={onNextRace}
+        onSimulateToEnd={onSimulateToEnd}
+        onFinishSeason={onFinishSeason}
+      />
+
     </div>
   );
 }
+
+// ─── FINALE SCREEN
 
 // ─── FINALE SCREEN ────────────────────────────────────────────────────────
 function FinaleScreen({ seasonResults, driverStandings, constructorStandings, focusDriverId, onPlayAgain }) {
