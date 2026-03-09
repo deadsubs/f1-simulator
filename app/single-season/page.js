@@ -118,6 +118,7 @@ function buildQualifyingData(qualifyingOrder, drivers, teams, weather, seed) {
   return { q1, q2, q3 };
 }
 
+
 // ─── DRIVER FOCUS PICKER ─────────────────────────────────────────────────
 function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwapConfirm }) {
   const [showReserves, setShowReserves] = useState(false);
@@ -132,33 +133,24 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
   })).filter((r) => r.drivers.length > 0);
 
   const allReserves = RESERVE_DRIVERS.filter((r) => !localGrid.find((g) => g.id === r.id));
-
   const selectedDriver = localGrid.find((d) => d.id === focusDriverId) ?? allReserves.find((d) => d.id === focusDriverId);
   const selectedTeam = selectedDriver ? getTeam(TEAMS, selectedDriver.teamId) : null;
 
   function handleGridDriverClick(d) {
-    if (swapMode) {
-      setSwapSource(swapSource === d.id ? null : d.id);
-      setSwapTarget(null);
-    } else {
-      setFocusDriverId(d.id);
-    }
+    if (swapMode) { setSwapSource(swapSource === d.id ? null : d.id); setSwapTarget(null); }
+    else setFocusDriverId(d.id);
   }
-
   function handleReserveClick(r) {
     if (!swapMode) { setFocusDriverId(r.id); return; }
     if (!swapSource) return;
     setSwapTarget(r.id);
   }
-
   function confirmSwap() {
     if (!swapSource || !swapTarget) return;
     const src = localGrid.find((d) => d.id === swapSource);
     const tgt = RESERVE_DRIVERS.find((d) => d.id === swapTarget);
     if (!src || !tgt) return;
-    const newGrid = localGrid.map((d) =>
-      d.id === swapSource ? { ...tgt, teamId: src.teamId, number: src.number } : d
-    );
+    const newGrid = localGrid.map((d) => d.id === swapSource ? { ...tgt, teamId: src.teamId, number: src.number } : d);
     setLocalGrid(newGrid);
     onSwapConfirm(newGrid);
     if (focusDriverId === swapSource) setFocusDriverId(swapTarget);
@@ -172,7 +164,8 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
   );
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 h-full flex flex-col">
+      {/* Header row */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-white/60 uppercase tracking-wider">Focus driver</p>
         <div className="flex gap-2">
@@ -201,10 +194,13 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
         </div>
       </div>
 
+      {/* Swap instruction banner */}
       {swapMode && (
         <div className="rounded-lg px-4 py-2.5 text-xs border" style={{ background: "rgba(225,6,0,0.08)", borderColor: F1_RED + "44" }}>
-          {!swapSource ? <span style={{ color: "#ffaa44" }}>① Select a grid driver to replace</span>
-            : !swapTarget ? <span style={{ color: "#ffaa44" }}>② Select a reserve driver to bring in</span>
+          {!swapSource
+            ? <span style={{ color: "#ffaa44" }}>① Select a grid driver to replace</span>
+            : !swapTarget
+            ? <span style={{ color: "#ffaa44" }}>② Select a reserve driver to bring in</span>
             : <span style={{ color: "#22c55e" }}>Ready — confirm the swap above</span>}
         </div>
       )}
@@ -234,11 +230,11 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
         </div>
       )}
 
-      {/* Grid grouped by team */}
-      <div className="rounded-lg border overflow-hidden" style={{ borderColor: PANEL_BORDER }}>
+      {/* Grid — 2 drivers per team row, teams stacked, fills available height */}
+      <div className="rounded-lg border overflow-hidden flex-1" style={{ borderColor: PANEL_BORDER }}>
         {teamRows.map(({ team, drivers }, ti) => (
           <div key={team.id} className={ti > 0 ? "border-t" : ""} style={{ borderColor: PANEL_BORDER }}>
-            <div className="px-3 py-1.5 flex items-center gap-2" style={{ background: team.color + "18" }}>
+            <div className="px-3 py-1 flex items-center gap-2" style={{ background: team.color + "18" }}>
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: team.color }} />
               <span className="text-xs font-bold uppercase tracking-wider" style={{ color: team.color }}>{team.name}</span>
             </div>
@@ -248,12 +244,12 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
                 const isSwapSource = swapSource === d.id;
                 return (
                   <button key={d.id} type="button" onClick={() => handleGridDriverClick(d)}
-                    className={"flex items-center gap-3 px-3 py-2.5 text-left transition-all hover:bg-white/5" + (di === 0 ? " border-r" : "")}
+                    className={"flex items-center gap-2 px-3 py-2 text-left transition-all hover:bg-white/5" + (di === 0 ? " border-r" : "")}
                     style={{ borderColor: PANEL_BORDER, background: isSwapSource ? F1_RED + "18" : isFocus ? team.color + "18" : undefined, outline: "2px solid " + (isSwapSource ? F1_RED : isFocus ? team.color : "transparent"), outlineOffset: "-2px" }}>
-                    <span className="font-black shrink-0 w-7 text-center" style={{ color: team.color, fontSize: "14px" }}>{d.number}</span>
+                    <span className="font-black shrink-0 w-6 text-center" style={{ color: team.color, fontSize: "13px" }}>{d.number}</span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-white leading-tight truncate">{d.flag} {d.short}</p>
-                      <p className="text-xs leading-tight truncate" style={{ color: "rgba(255,255,255,0.4)" }}>{d.name.split(" ").pop()}</p>
+                      <p className="text-xs leading-tight truncate" style={{ color: "rgba(255,255,255,0.4)", fontSize: "11px" }}>{d.name.split(" ").pop()}</p>
                     </div>
                     <span className="ml-auto text-xs shrink-0">
                       {isSwapSource ? <span style={{ color: F1_RED }}>⇄</span> : isFocus ? <span style={{ color: team.color }}>●</span> : null}
@@ -266,9 +262,9 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
         ))}
       </div>
 
-      {/* Reserve pool */}
+      {/* Reserve pool toggle */}
       <button type="button" onClick={() => setShowReserves((v) => !v)}
-        className="w-full text-left px-4 py-3 rounded-lg border flex items-center justify-between hover:bg-white/5 transition-all"
+        className="w-full text-left px-4 py-2.5 rounded-lg border flex items-center justify-between hover:bg-white/5 transition-all"
         style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
         <span className="text-sm font-bold text-white/70">
           Reserve &amp; F2 drivers <span className="text-white/30 font-normal text-xs">({allReserves.length} available)</span>
@@ -278,32 +274,36 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
 
       {showReserves && (
         <div className="rounded-lg border overflow-hidden" style={{ borderColor: PANEL_BORDER }}>
-          {allReserves.map((r) => {
-            const isFocus = r.id === focusDriverId;
-            const isSwapTarget = swapTarget === r.id;
-            const disabled = swapMode && !swapSource;
-            return (
-              <button key={r.id} type="button" onClick={() => !disabled && handleReserveClick(r)}
-                className={"w-full flex items-center gap-3 px-4 py-2.5 text-left border-b transition-all" + (disabled ? " opacity-40 cursor-not-allowed" : " hover:bg-white/5")}
-                style={{ borderColor: PANEL_BORDER, background: isSwapTarget ? "#22c55e18" : isFocus ? F1_RED + "18" : undefined, outline: isSwapTarget ? "2px solid #22c55e" : isFocus ? "2px solid " + F1_RED : undefined, outlineOffset: "-2px" }}>
-                <span className="text-sm shrink-0">{r.flag}</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold text-white leading-tight truncate">{r.name}</p>
-                  <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>{r.short} · Reserve</p>
-                </div>
-                <div className="flex gap-3 items-center shrink-0">
-                  {[["P", r.pace], ["C", r.consistency], ["W", r.wetWeather]].map(([lbl, val]) => (
-                    <div key={lbl} className="flex flex-col items-center">
-                      <span className="text-xs font-bold text-white">{val}</span>
-                      <span className="text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>{lbl}</span>
-                    </div>
-                  ))}
-                </div>
-                {isSwapTarget && <span className="text-xs ml-1" style={{ color: "#22c55e" }}>✓</span>}
-                {isFocus && !isSwapTarget && <span className="text-xs ml-1" style={{ color: F1_RED }}>●</span>}
-              </button>
-            );
-          })}
+          {/* 2-column grid for reserves to keep it compact */}
+          <div className="grid grid-cols-2">
+            {allReserves.map((r, ri) => {
+              const isFocus = r.id === focusDriverId;
+              const isSwapTarget = swapTarget === r.id;
+              const disabled = swapMode && !swapSource;
+              const isOdd = ri % 2 === 0;
+              return (
+                <button key={r.id} type="button" onClick={() => !disabled && handleReserveClick(r)}
+                  className={"flex items-center gap-2 px-3 py-2 text-left border-b transition-all" + (isOdd ? " border-r" : "") + (disabled ? " opacity-40 cursor-not-allowed" : " hover:bg-white/5")}
+                  style={{ borderColor: PANEL_BORDER, background: isSwapTarget ? "#22c55e18" : isFocus ? F1_RED + "18" : undefined, outline: isSwapTarget ? "2px solid #22c55e" : isFocus ? "2px solid " + F1_RED : undefined, outlineOffset: "-2px" }}>
+                  <span className="text-sm shrink-0">{r.flag}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-white leading-tight truncate">{r.name}</p>
+                    <p className="text-xs leading-tight" style={{ color: "rgba(255,255,255,0.35)", fontSize: "11px" }}>Reserve</p>
+                  </div>
+                  <div className="flex gap-2 items-center shrink-0">
+                    {[["P", r.pace], ["C", r.consistency], ["W", r.wetWeather]].map(([lbl, val]) => (
+                      <div key={lbl} className="flex flex-col items-center">
+                        <span className="text-xs font-bold text-white leading-none">{val}</span>
+                        <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "10px" }}>{lbl}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {isSwapTarget && <span className="text-xs ml-1" style={{ color: "#22c55e" }}>✓</span>}
+                  {isFocus && !isSwapTarget && <span className="text-xs ml-1" style={{ color: F1_RED }}>●</span>}
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
@@ -464,9 +464,9 @@ function Slider({ label, value, min, max, step = 1, onChange, description, color
   );
 }
 
+
 // ─── SETUP SCREEN ─────────────────────────────────────────────────────────
 function SetupScreen({ onBegin, simulationMode, setSimulationMode, focusDriverId, setFocusDriverId, advancedConfig, setAdvancedConfig, gridDrivers, onSwapConfirm }) {
-  const drivers = getActiveDrivers(DRIVERS);
   const realistic = SIMULATION_MODES.realistic;
   const wildcard = SIMULATION_MODES.wildcard;
   const isRealistic = simulationMode === realistic;
@@ -484,87 +484,106 @@ function SetupScreen({ onBegin, simulationMode, setSimulationMode, focusDriverId
   };
 
   return (
-    <div className="min-h-screen text-white" style={{ background: BG_DARK }}>
-      <div className="max-w-2xl mx-auto px-6 py-16 text-center">
-        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-wider" style={{ fontFamily: "var(--font-titillium)" }}>SINGLE SEASON</h1>
+    <div className="min-h-screen text-white" style={{ background: BG_DARK, fontFamily: "var(--font-titillium)" }}>
+      {/* Page header — full width, centred */}
+      <div className="max-w-5xl mx-auto px-6 pt-14 pb-8 text-center">
+        <h1 className="text-4xl md:text-5xl font-black uppercase tracking-wider">SINGLE SEASON</h1>
         <p className="mt-3 text-lg text-white/70">Follow every race of the {SEASON} season</p>
-        <div className="mt-6 h-px w-24 mx-auto" style={{ background: F1_RED }} />
+        <div className="mt-5 h-px w-24 mx-auto" style={{ background: F1_RED }} />
+      </div>
 
-        <div className="mt-12 space-y-8 text-left">
-          <div>
-            <p className="text-sm text-white/60 uppercase tracking-wider mb-3">Simulation mode</p>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { mode: realistic, label: "Realistic", desc: realistic.description, active: isRealistic, border: "#fff" },
-                { mode: wildcard, label: "Wildcard", desc: wildcard.description, active: !isRealistic, border: F1_RED },
-              ].map(({ mode, label, desc, active, border }) => (
-                <button key={label} type="button" onClick={() => applyPreset(mode)}
-                  className="text-left p-5 rounded-lg border-2 transition-all"
-                  style={{ background: PANEL_BG, borderColor: active ? border : "rgba(255,255,255,0.15)" }}>
-                  <p className="font-bold text-white">{label}</p>
-                  <p className="text-sm text-white/70 mt-1">{desc}</p>
+      {/* Two-column layout: left = settings, right = driver picker */}
+      <div className="max-w-5xl mx-auto px-6 pb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+          {/* ── LEFT COLUMN: mode + advanced ── */}
+          <div className="space-y-6">
+            {/* Simulation mode */}
+            <div>
+              <p className="text-sm text-white/60 uppercase tracking-wider mb-3">Simulation mode</p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { mode: realistic, label: "Realistic", desc: realistic.description, active: isRealistic, border: "#fff" },
+                  { mode: wildcard, label: "Wildcard", desc: wildcard.description, active: !isRealistic, border: F1_RED },
+                ].map(({ mode, label, desc, active, border }) => (
+                  <button key={label} type="button" onClick={() => applyPreset(mode)}
+                    className="text-left p-4 rounded-lg border-2 transition-all hover:opacity-90"
+                    style={{ background: PANEL_BG, borderColor: active ? border : "rgba(255,255,255,0.15)" }}>
+                    <p className="font-bold text-white">{label}</p>
+                    <p className="text-sm text-white/60 mt-1">{desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Advanced settings */}
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: PANEL_BORDER }}>
+              <button type="button" onClick={() => setShowAdvanced((v) => !v)}
+                className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+                style={{ background: PANEL_BG }}>
+                <span className="text-sm font-bold text-white/80 uppercase tracking-wider">Advanced settings</span>
+                <span className="text-white/40 text-sm">{showAdvanced ? "▲ Hide" : "▼ Show"}</span>
+              </button>
+              {showAdvanced && (
+                <div className="px-5 pb-5 space-y-5" style={{ background: PANEL_BG }}>
+                  <Slider label="Chaos level" value={advancedConfig.chaosLevel} min={1} max={10}
+                    onChange={(v) => setAdvancedConfig((c) => ({ ...c, chaosLevel: v }))}
+                    description="Higher = more random results, upsets, position swings" colorHigh={F1_RED} />
+                  <Slider label="Safety car frequency" value={advancedConfig.safetyCarFrequency} min={1} max={10}
+                    onChange={(v) => setAdvancedConfig((c) => ({ ...c, safetyCarFrequency: v }))}
+                    description="How often safety cars appear" />
+                  <Slider label="DNF rate" value={advancedConfig.dnfRate} min={1} max={10}
+                    onChange={(v) => setAdvancedConfig((c) => ({ ...c, dnfRate: v }))}
+                    description="Reliability — higher = more retirements" colorHigh="#f87171" />
+                  <Slider label="Wet weather variability" value={advancedConfig.wetWeatherBoost} min={1} max={10}
+                    onChange={(v) => setAdvancedConfig((c) => ({ ...c, wetWeatherBoost: v }))}
+                    description="How much rain shuffles the running order" />
+                  <div className="flex items-center justify-between pt-1">
+                    <div>
+                      <p className="text-sm text-white/70">Team upgrades</p>
+                      <p className="text-xs text-white/30">Teams gain pace mid-season</p>
+                    </div>
+                    <button type="button" onClick={() => setAdvancedConfig((c) => ({ ...c, upgradesEnabled: !c.upgradesEnabled }))}
+                      className="px-4 py-2 rounded font-bold text-sm transition-all"
+                      style={{ background: advancedConfig.upgradesEnabled ? F1_RED : "rgba(255,255,255,0.1)", color: "#fff" }}>
+                      {advancedConfig.upgradesEnabled ? "On" : "Off"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* CTA buttons — sit naturally below settings on left col */}
+            <div className="space-y-3 pt-2">
+              <div className="grid grid-cols-2 gap-3">
+                <button type="button" onClick={() => onBegin("racebyrace")}
+                  className="py-4 font-black uppercase tracking-wider rounded transition-all hover:opacity-90 border-2"
+                  style={{ background: "transparent", borderColor: F1_RED, color: F1_RED }}>
+                  Race by Race
                 </button>
-              ))}
+                <button type="button" onClick={() => onBegin("full")}
+                  className="py-4 font-black uppercase tracking-wider text-white rounded transition-all hover:opacity-90"
+                  style={{ background: F1_RED }}>
+                  Full Season →
+                </button>
+              </div>
+              <p className="text-white/30 text-xs text-center">
+                Race by Race: simulate one race at a time · Full Season: jump straight to the finale
+              </p>
             </div>
           </div>
 
-          <div className="rounded-lg border overflow-hidden" style={{ borderColor: PANEL_BORDER }}>
-            <button type="button" onClick={() => setShowAdvanced((v) => !v)}
-              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
-              style={{ background: PANEL_BG }}>
-              <span className="text-sm font-bold text-white/80 uppercase tracking-wider">Advanced settings</span>
-              <span className="text-white/40 text-sm">{showAdvanced ? "▲ Hide" : "▼ Show"}</span>
-            </button>
-            {showAdvanced && (
-              <div className="px-5 pb-5 space-y-5" style={{ background: PANEL_BG }}>
-                <Slider label="Chaos level" value={advancedConfig.chaosLevel} min={1} max={10}
-                  onChange={(v) => setAdvancedConfig((c) => ({ ...c, chaosLevel: v }))}
-                  description="Higher = more random results, upsets, position swings" colorHigh={F1_RED} />
-                <Slider label="Safety car frequency" value={advancedConfig.safetyCarFrequency} min={1} max={10}
-                  onChange={(v) => setAdvancedConfig((c) => ({ ...c, safetyCarFrequency: v }))}
-                  description="How often safety cars appear" />
-                <Slider label="DNF rate" value={advancedConfig.dnfRate} min={1} max={10}
-                  onChange={(v) => setAdvancedConfig((c) => ({ ...c, dnfRate: v }))}
-                  description="Reliability — higher = more retirements" colorHigh="#f87171" />
-                <Slider label="Wet weather variability" value={advancedConfig.wetWeatherBoost} min={1} max={10}
-                  onChange={(v) => setAdvancedConfig((c) => ({ ...c, wetWeatherBoost: v }))}
-                  description="How much rain shuffles the running order" />
-                <div className="flex items-center justify-between pt-1">
-                  <div>
-                    <p className="text-sm text-white/70">Team upgrades</p>
-                    <p className="text-xs text-white/30">Teams gain pace mid-season</p>
-                  </div>
-                  <button type="button" onClick={() => setAdvancedConfig((c) => ({ ...c, upgradesEnabled: !c.upgradesEnabled }))}
-                    className="px-4 py-2 rounded font-bold text-sm transition-all"
-                    style={{ background: advancedConfig.upgradesEnabled ? F1_RED : "rgba(255,255,255,0.1)", color: "#fff" }}>
-                    {advancedConfig.upgradesEnabled ? "On" : "Off"}
-                  </button>
-                </div>
-              </div>
-            )}
+          {/* ── RIGHT COLUMN: driver picker ── */}
+          <div>
+            <DriverFocusPicker
+              focusDriverId={focusDriverId}
+              setFocusDriverId={setFocusDriverId}
+              gridDrivers={gridDrivers}
+              onSwapConfirm={onSwapConfirm}
+            />
           </div>
 
-          <DriverFocusPicker
-            focusDriverId={focusDriverId}
-            setFocusDriverId={setFocusDriverId}
-            gridDrivers={gridDrivers}
-            onSwapConfirm={onSwapConfirm}
-          />
         </div>
-
-        <div className="mt-12 grid grid-cols-2 gap-4">
-          <button type="button" onClick={() => onBegin("racebyrace")}
-            className="py-4 font-black uppercase tracking-wider text-white rounded transition-all hover:opacity-90 border-2"
-            style={{ background: "transparent", borderColor: F1_RED, color: F1_RED }}>
-            Race by Race
-          </button>
-          <button type="button" onClick={() => onBegin("full")}
-            className="py-4 font-black uppercase tracking-wider text-white rounded transition-all hover:opacity-90"
-            style={{ background: F1_RED }}>
-            Full Season →
-          </button>
-        </div>
-        <p className="text-white/30 text-xs mt-3">Race by Race: simulate one race at a time · Full Season: jump straight to the finale</p>
       </div>
     </div>
   );
