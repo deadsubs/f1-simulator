@@ -1692,6 +1692,22 @@ export default function SingleSeasonPage() {
     }, 5000);
   }, [currentRound, simulateRound]);
 
+// ── Render guards — loadingNext must come FIRST so it overrides setup/race ──
+  if (loadingNext) {
+    const upcomingRound = currentRound + 1;
+    const upcomingRace = GP_RACES[upcomingRound - 1] ?? null;
+    const remainingCount = TOTAL_ROUNDS - currentRound;
+    return (
+      <RaceLoadingScreen
+        race={upcomingRace}
+        round={upcomingRound}
+        totalRounds={TOTAL_ROUNDS}
+        mode={loadingMode}
+        remainingCount={remainingCount}
+      />
+    );
+  }
+
   if (screen === "setup") {
     return (
       <SetupScreen
@@ -1724,6 +1740,22 @@ export default function SingleSeasonPage() {
       />
     );
   }
+
+  return (
+    <RaceRevealScreen
+      raceResult={currentRaceResult}
+      round={currentRound}
+      race={currentRace}
+      driverStandings={driverStandings}
+      constructorStandings={constructorStandings}
+      previousRaceWinner={previousRaceWinner}
+      focusDriverId={focusDriverId}
+      seasonResults={seasonResults}
+      onNextRace={handleNextRace}
+      onFinishSeason={() => setScreen("finale")}
+      onSimulateToEnd={handleSimulateToEnd}
+    />
+  );
 
   // ── Loading / tension screen ──────────────────────────────────────────
   if (loadingNext) {
