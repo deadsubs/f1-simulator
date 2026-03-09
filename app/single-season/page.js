@@ -1198,6 +1198,14 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
         </div>
       </div>
 
+      <RaceActionBar
+        round={round}
+        totalRounds={TOTAL_ROUNDS}
+        onNextRace={onNextRace}
+        onSimulateToEnd={onSimulateToEnd}
+        onFinishSeason={onFinishSeason}
+      />
+
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-4">
         {/* ── QUALIFYING TAB ── */}
         {activeTab === "qualifying" && (
@@ -1344,17 +1352,11 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
 
       </div>
 
-      <RaceActionBar
-        round={round}
-        totalRounds={TOTAL_ROUNDS}
-        onNextRace={onNextRace}
-        onSimulateToEnd={onSimulateToEnd}
-        onFinishSeason={onFinishSeason}
-      />
-
     </div>
   );
 }
+
+// ─── FINALE SCREEN
 
 // ─── FINALE SCREEN
 
