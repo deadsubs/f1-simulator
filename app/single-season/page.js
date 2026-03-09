@@ -609,19 +609,19 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
             const isPole = isQ3 && row.pos === 1;
             return (
               <tr key={row.driverId} className="border-b"
-                style={{ borderColor: PANEL_BORDER, background: isPole ? "rgba(255,215,0,0.08)" : isFocus ? "rgba(225,6,0,0.12)" : undefined, opacity: row.eliminated ? 0.5 : 1 }}>
-                <td className="pl-3 py-2.5 w-7 text-white/40 font-mono text-xs shrink-0">{row.pos}</td>
-                <td className="py-2.5 w-3 shrink-0">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
-                <td className="py-2.5 pl-2 text-white font-medium text-xs">{d?.flag} {d?.short ?? d?.name?.split(" ").pop() ?? row.driverId}</td>
-                <td className="py-2.5 text-right font-mono text-xs whitespace-nowrap" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
+                style={{ borderColor: PANEL_BORDER, background: isPole ? "rgba(255,215,0,0.08)" : isFocus ? "rgba(225,6,0,0.12)" : undefined, opacity: row.eliminated ? 0.45 : 1 }}>
+                <td className="pl-4 py-2 w-8 text-white/40 font-mono text-xs">{row.pos}</td>
+                <td className="py-2 w-3">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
+                <td className="py-2 pl-2 text-white font-medium">{d?.flag} {d?.name ?? row.driverId}</td>
+                <td className="py-2 text-white/40 text-xs">{t?.name}</td>
+                <td className="pr-2 py-2 text-right font-mono text-xs" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
                   {isPole && "🏆 "}{row.time}
                 </td>
-                <td className="pr-3 py-2.5 w-12 text-right">
-                  {row.eliminated
-                    ? <span className="text-xs font-bold whitespace-nowrap" style={{ color: F1_RED }}>OUT</span>
-                    : row.gap
-                    ? <span className="text-xs font-mono text-white/35 whitespace-nowrap">{row.gap}</span>
-                    : null}
+                <td className="pr-2 py-2 text-right font-mono text-xs w-20" style={{ color: "rgba(255,255,255,0.35)" }}>
+                  {row.gap ?? ""}
+                </td>
+                <td className="pr-3 py-2 w-10">
+                  {row.eliminated && <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(225,6,0,0.25)", color: F1_RED }}>OUT</span>}
                 </td>
               </tr>
             );
@@ -635,8 +635,6 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
 // ─── INTERACTIVE LAP CHART ────────────────────────────────────────────────
 function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, drivers, teams, focusDriverId, numCheckpoints }) {
   const [hidden, setHidden] = useState(new Set());
-  const [hoverX, setHoverX] = useState(null);
-  const svgRef = useRef(null);
   const toggle = (id) => setHidden((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const getColor = (id) => getTeam(teams, getDriver(drivers, id)?.teamId)?.color ?? "#666";
   const width = 760, height = 240;
@@ -647,26 +645,8 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
     const pts = cps.map((pos, i) => [pad.left + (i / (numCheckpoints - 1)) * cw, pad.top + (Math.min(pos, maxPos) / maxPos) * ch]);
     return { id, pts, color: getColor(id), isFocus: id === focusDriverId };
   });
-
-  const handleMouseMove = (e) => {
-    const rect = svgRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = (e.clientX - rect.left) / rect.width * width;
-    const idx = Math.round(((x - pad.left) / cw) * (numCheckpoints - 1));
-    setHoverX(Math.max(0, Math.min(numCheckpoints - 1, idx)));
-  };
-
-  const hoverPositions = hoverX !== null
-    ? qualifyingOrder
-        .filter(id => !hidden.has(id) && (positionCheckpoints[id] || [])[hoverX] !== undefined)
-        .map(id => ({ id, pos: positionCheckpoints[id][hoverX], color: getColor(id), d: getDriver(drivers, id) }))
-        .sort((a, b) => a.pos - b.pos)
-    : [];
-
-  const lapLabel = hoverX !== null ? (hoverX === 0 ? "START" : hoverX === numCheckpoints - 1 ? "FINISH" : "L" + Math.round((hoverX / (numCheckpoints - 1)) * 57)) : null;
-
   return (
-    <div className="relative">
+    <div>
       <div className="px-4 pt-3 pb-2 border-b flex flex-wrap gap-1.5 items-center" style={{ borderColor: PANEL_BORDER }}>
         <button type="button" onClick={() => setHidden(new Set())} className="text-xs px-2 py-1 rounded border" style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.6)" }}>All</button>
         <button type="button" onClick={() => setHidden(new Set(qualifyingOrder.filter((id) => id !== focusDriverId)))} className="text-xs px-2 py-1 rounded border mr-1" style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.6)" }}>Focus only</button>
@@ -683,8 +663,8 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
           );
         })}
       </div>
-     <div className="p-4 relative" style={{ height: "280px" }}>
-        <svg ref={svgRef} width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible cursor-crosshair" onMouseMove={handleMouseMove} onMouseLeave={() => setHoverX(null)}>
+      <div className="p-4" style={{ height: "280px" }}>
+        <svg width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible">
           {[1, 5, 10, 15, 20].map((p) => (
             <g key={p}>
               <line x1={pad.left} y1={pad.top + (p / maxPos) * ch} x2={pad.left + cw} y2={pad.top + (p / maxPos) * ch} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
@@ -708,34 +688,13 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
               </g>
             );
           })}
-       {hoverX !== null && (
-            <line
-              x1={pad.left + (hoverX / (numCheckpoints - 1)) * cw}
-              y1={pad.top}
-              x2={pad.left + (hoverX / (numCheckpoints - 1)) * cw}
-              y2={pad.top + ch}
-              stroke="rgba(255,255,255,0.3)" strokeWidth="1" strokeDasharray="3,3" />
-          )}
         </svg>
-        {hoverX !== null && hoverPositions.length > 0 && (
-          <div className="absolute top-2 right-2 rounded-lg border text-xs overflow-hidden pointer-events-none"
-            style={{ background: "#0d0d1a", borderColor: PANEL_BORDER, minWidth: "120px", maxHeight: "220px", overflowY: "auto" }}>
-            <div className="px-2 py-1 border-b text-white/40 font-bold uppercase tracking-wider" style={{ borderColor: PANEL_BORDER, fontSize: "10px" }}>{lapLabel}</div>
-            {hoverPositions.map(({ id, pos, color, d }) => (
-              <div key={id} className="flex items-center gap-1.5 px-2 py-1" style={{ background: id === focusDriverId ? "rgba(225,6,0,0.12)" : undefined }}>
-                <span className="font-black w-4 text-right shrink-0" style={{ color: "rgba(255,255,255,0.5)", fontSize: "10px" }}>{pos}</span>
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                <span className="font-medium truncate" style={{ color: id === focusDriverId ? "#fff" : "rgba(255,255,255,0.75)", fontSize: "11px" }}>{d?.short ?? d?.name?.split(" ").pop()}</span>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-// ─── TYRE STRATEGY
+// ─── TYRE STRATEGY ────────────────────────────────────────────────────────
 const TYRE_COLORS = { soft: "#E10600", medium: "#FFD700", hard: "#888", intermediate: "#22c55e", wet: "#3b82f6" };
 const TYRE_LABEL = { soft: "S", medium: "M", hard: "H", intermediate: "I", wet: "W" };
 
@@ -822,10 +781,10 @@ function RaceResultsTable({ results, drivers, teams, focusDriverId }) {
               <td className="py-2 pr-1">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
               <td className="py-2 font-medium" style={{ color: r.dnf ? "rgba(255,255,255,0.4)" : "#fff" }}>
                 {d?.flag} {d?.name ?? r.driverId}
-                
+                {r.dnf && <span className="ml-2 text-xs text-red-400">{r.dnfReason ?? "DNF"}</span>}
               </td>
               <td className="py-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{t?.name}</td>
-                             <td className="py-2 text-right text-xs font-mono whitespace-nowrap" style={{ color: r.dnf ? F1_RED : "rgba(255,255,255,0.6)" }}>{r.dnf ? (r.dnfReason ?? "DNF") : r.gap ?? ""}</td>
+               <td className="py-2 text-right text-xs font-mono" style={{ color: r.position === 1 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)" }}>{r.dnf ? "" : r.position === 1 ? "WINNER" : r.gap ?? ""}</td>
               <td className="pr-4 py-2 text-right font-bold" style={{ color: r.points > 0 ? "#fff" : "rgba(255,255,255,0.3)" }}>{r.dnf ? "" : (r.points ?? 0)}</td>
             </tr>
           );
@@ -1029,40 +988,33 @@ function ChampionshipGapChart({ cumulativePoints, driverStandings, drivers, seas
   const n = seasonResults.length;
   if (!leaderId || n === 0) return null;
 
-  const CAP = 75; // pts above/below leader shown
-  const width = 700, height = 240;
-  const pad = { top: 20, right: 80, bottom: 28, left: 44 };
+  const width = 700, height = 200;
+  const pad = { top: 16, right: 80, bottom: 28, left: 44 };
   const cw = width - pad.left - pad.right;
   const ch = height - pad.top - pad.bottom;
-  const midY = pad.top + ch / 2;
 
-  // gaps are relative to leader: positive = ahead, negative = behind
   const gaps = top5.map((s) => ({
     driverId: s.driverId,
     color: getTeam(TEAMS, s.teamId)?.color ?? "#888",
     points: (cumulativePoints[s.driverId] || []).map((pts, i) => {
       const leaderPts = (cumulativePoints[leaderId] || [])[i] ?? 0;
-      return pts - leaderPts; // positive if this driver leads at some point
+      return leaderPts - pts;
     }),
   }));
 
-  const gridLines = [-CAP, -50, -25, 0, 25, 50, CAP].filter(v => Math.abs(v) <= CAP);
-
-  const gapToY = (gap) => midY - (Math.max(-CAP, Math.min(CAP, gap)) / CAP) * (ch / 2);
+  const maxGap = Math.max(...gaps.flatMap((g) => g.points), 10);
+  const gridStep = maxGap <= 50 ? 10 : maxGap <= 150 ? 25 : maxGap <= 300 ? 50 : 100;
+  const gridLines = [];
+  for (let v = 0; v <= maxGap; v += gridStep) gridLines.push(v);
 
   return (
     <svg width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible">
       {gridLines.map((v) => {
-        const y = gapToY(v);
-        const isZero = v === 0;
+        const y = pad.top + (v / maxGap) * ch;
         return (
           <g key={v}>
-            <line x1={pad.left} y1={y} x2={pad.left + cw} y2={y}
-              stroke={isZero ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.06)"}
-              strokeWidth={isZero ? 1.5 : 1} />
-            <text x={pad.left - 6} y={y + 4} fill={isZero ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.3)"} fontSize="9" textAnchor="end">
-              {v > 0 ? "+" + v : v}
-            </text>
+            <line x1={pad.left} y1={y} x2={pad.left + cw} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+            <text x={pad.left - 6} y={y + 4} fill="rgba(255,255,255,0.4)" fontSize="9" textAnchor="end">{v}</text>
           </g>
         );
       })}
@@ -1070,15 +1022,16 @@ function ChampionshipGapChart({ cumulativePoints, driverStandings, drivers, seas
         if (points.length < 2) return null;
         const d = getDriver(drivers, driverId);
         const isLeader = driverId === leaderId;
-        const pts = points.map((gap, i) => [
-          pad.left + (i / Math.max(n - 1, 1)) * cw,
-          gapToY(gap),
-        ]);
+        const pts = points.map((gap, i) => {
+          const x = pad.left + (i / Math.max(n - 1, 1)) * cw;
+          const y = pad.top + (Math.min(gap, maxGap) / maxGap) * ch;
+          return [x, y];
+        });
         const path = "M " + pts.map((p) => p[0] + "," + p[1]).join(" L ");
         const last = pts[pts.length - 1];
         return (
           <g key={driverId}>
-            <path d={path} fill="none" stroke={color} strokeWidth={isLeader ? 2.5 : 1.5} strokeOpacity={isLeader ? 1 : 0.85} />
+            <path d={path} fill="none" stroke={color} strokeWidth={isLeader ? 2.5 : 1.5} strokeOpacity={isLeader ? 1 : 0.8} />
             {last && <text x={last[0] + 6} y={last[1] + 4} fill={color} fontSize="10" fontWeight="bold">{d?.short ?? d?.name?.split(" ").pop()}</text>}
           </g>
         );
@@ -1324,8 +1277,7 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                 );
               })()}
               <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}>
-                <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>RACE RESULT</span></div>
+                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>RACE RESULT</span></div>
                 <RaceResultsTable results={raceResult.results} drivers={drivers} teams={TEAMS} focusDriverId={focusDriverId} />
               </div>
             </div>
@@ -1333,22 +1285,17 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
             {/* RIGHT — lap chart, tyres, standings */}
             <div className="col-span-3 space-y-3">
               <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}>
-              <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>LAP CHART</span></div>
+                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>LAP CHART</span></div>
                 <InteractiveLapChart positionCheckpoints={raceResult.positionCheckpoints || {}} qualifyingOrder={raceResult.qualifyingOrder || []} results={raceResult.results || []} drivers={drivers} teams={TEAMS} focusDriverId={focusDriverId} numCheckpoints={20} />
               </div>
               <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}>
-              <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>TYRE STRATEGY</span></div>
+                <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>TYRE STRATEGY</span></div>
                 <TyreStrategy tyreStints={raceResult.tyreStints || {}} results={raceResult.results} drivers={drivers} teams={TEAMS} focusDriverId={focusDriverId} />
               </div>
-               </div>
-          </div>
-          {/* Championship standings — full width two cols */}
-          <div className="grid grid-cols-2 gap-3">
+              {/* Championship standings — two cols */}
+              <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-                  <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}>
-            <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>DRIVERS</span></div>
+                  <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>DRIVERS</span></div>
                   <div className="py-1">
                     {driverStandings.map((row, i) => {
                       const d = getDriver(drivers, row.driverId);
@@ -1373,8 +1320,7 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                   </div>
                 </div>
                 <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-                  <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}>
-                    <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CONSTRUCTORS</span></div>
+                  <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CONSTRUCTORS</span></div>
                   <div className="py-1">
                     {constructorStandings.map((row, i) => {
                       const t = getTeam(TEAMS, row.teamId);
@@ -1390,6 +1336,7 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                   </div>
                 </div>
               </div>
+            </div>
           </div>
         )}
 
@@ -1411,8 +1358,7 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
               );
             })()}
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}>
-              <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>
               RACE REPORT</span></div>
               <div className="p-5" style={{ background: "#0e0e22" }}>
   {reportLoading
@@ -1566,8 +1512,7 @@ function FinaleScreen({ seasonResults, driverStandings, constructorStandings, fo
         {tab === "drivers" && (
           <div className="space-y-5">
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}>
-          <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>DRIVER STANDINGS</span></div>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>DRIVER STANDINGS</span></div>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wider border-b" style={{ borderColor: PANEL_BORDER, color: "rgba(255,255,255,0.4)" }}>
@@ -1621,9 +1566,7 @@ function FinaleScreen({ seasonResults, driverStandings, constructorStandings, fo
               </table>
             </div>
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}>
-                  <span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CHAMPIONSHIP — TOP 5 GAP TO LEADER (PTS)</span>
-</div>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CHAMPIONSHIP GAP — TOP 5 TO LEADER</span></div>
               <div className="p-4">
                 <ChampionshipGapChart cumulativePoints={cumulativePoints} driverStandings={driverStandings} drivers={drivers} seasonResults={seasonResults} />
               </div>
