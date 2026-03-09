@@ -310,6 +310,95 @@ function DriverFocusPicker({ focusDriverId, setFocusDriverId, gridDrivers, onSwa
   );
 }
 
+// ─── RACE LOADING SCREEN ─────────────────────────────────────────────────
+function RaceLoadingScreen({ race, round, totalRounds, mode }) {
+  const [progress, setProgress] = useState(0);
+  const [statusText, setStatusText] = useState("Preparing...");
+  const duration = mode === "full" ? 5000 : 2000;
+
+  useEffect(() => {
+    const steps = mode === "full"
+      ? [
+          [0,    "Simulating all " + totalRounds + " races..."],
+          [20,   "Battles at the front unfolding..."],
+          [45,   "Mid-season upgrades arriving..."],
+          [70,   "Championship fight intensifying..."],
+          [90,   "Final rounds decided..."],
+          [100,  "Season complete."],
+        ]
+      : [
+          [0,   "Drivers line up on the grid..."],
+          [30,  "Lights out! Race underway..."],
+          [65,  "Pit stop windows opening..."],
+          [90,  "Final laps..."],
+          [100, "Chequered flag!"],
+        ];
+
+    const interval = 80;
+    const totalTicks = duration / interval;
+    let tick = 0;
+    const timer = setInterval(() => {
+      tick++;
+      const pct = Math.min(100, Math.round((tick / totalTicks) * 100));
+      setProgress(pct);
+      const step = [...steps].reverse().find(([threshold]) => pct >= threshold);
+      if (step) setStatusText(step[1]);
+      if (pct >= 100) clearInterval(timer);
+    }, interval);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center px-6"
+      style={{ background: BG_DARK, fontFamily: "var(--font-titillium)" }}>
+
+      {/* Racing stripe animation — same as franchise mode */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/2 h-1 -translate-y-1/2 w-full"
+          style={{
+            background: "repeating-linear-gradient(90deg, " + F1_RED + " 0px, " + F1_RED + " 20px, transparent 20px, transparent 40px)",
+            animation: "racing-line 1.5s linear infinite",
+          }} />
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 text-center space-y-2">
+        {mode === "full" ? (
+          <>
+            <p className="text-white/40 text-xs uppercase tracking-widest">Full Season</p>
+            <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-wider">2026 Season</h2>
+            <p className="text-white/60 text-lg">Simulating all {totalRounds} races</p>
+          </>
+        ) : (
+          <>
+            <p className="text-white/40 text-xs uppercase tracking-widest">Round {round} of {totalRounds}</p>
+            <h2 className="text-4xl md:text-5xl font-black text-white uppercase tracking-wider">
+              {race?.flag} {race?.name ?? "Grand Prix"}
+            </h2>
+            <p className="text-white/60 text-lg">{race?.location}</p>
+          </>
+        )}
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative z-10 w-full max-w-md mt-12">
+        <div className="h-3 w-full rounded-sm overflow-hidden border border-white/20" style={{ background: PANEL_BG }}>
+          <div className="h-full rounded-sm transition-all duration-75"
+            style={{ width: progress + "%", background: F1_RED }} />
+        </div>
+        <p className="mt-4 text-center text-white/60 text-sm min-h-[1.5rem]">{statusText}</p>
+      </div>
+
+      <style>{`
+        @keyframes racing-line {
+          from { background-position: 0 0; }
+          to { background-position: 40px 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 // ─── SLIDER ───────────────────────────────────────────────────────────────
 function Slider({ label, value, min, max, step = 1, onChange, description, colorHigh }) {
   const pct = ((value - min) / (max - min)) * 100;
@@ -1442,6 +1531,7 @@ export default function SingleSeasonPage() {
   const [currentRound, setCurrentRound] = useState(0);
   const [currentRaceResult, setCurrentRaceResult] = useState(null);
   const [loadingNext, setLoadingNext] = useState(false);
+  const [loadingMode, setLoadingMode] = useState("race"); // "race" | "full"
   const [advancedConfig, setAdvancedConfig] = useState({
     chaosLevel: SIMULATION_MODES.realistic.chaosLevel ?? 5,
     safetyCarFrequency: SIMULATION_MODES.realistic.safetyCarFrequency ?? 5,
@@ -1472,21 +1562,31 @@ export default function SingleSeasonPage() {
 
   const handleBeginSeason = useCallback((mode) => {
     if (mode === "full") {
-      const allResults = [];
-      for (let r = 1; r <= TOTAL_ROUNDS; r++) {
-        const result = simulateRound(r);
-        if (result) allResults.push(result);
-      }
-      setSeasonResults(allResults);
-      setCurrentRound(TOTAL_ROUNDS);
-      setCurrentRaceResult(allResults[allResults.length - 1]);
-      setScreen("finale");
+      setLoadingMode("full");
+      setLoadingNext(true);
+      setTimeout(() => {
+        const allResults = [];
+        for (let r = 1; r <= TOTAL_ROUNDS; r++) {
+          const result = simulateRound(r);
+          if (result) allResults.push(result);
+        }
+        setSeasonResults(allResults);
+        setCurrentRound(TOTAL_ROUNDS);
+        setCurrentRaceResult(allResults[allResults.length - 1]);
+        setLoadingNext(false);
+        setScreen("finale");
+      }, 5000);
     } else {
-      setScreen("race");
-      setCurrentRound(1);
-      const result = simulateRound(1);
-      setCurrentRaceResult(result);
-      setSeasonResults([result]);
+      setLoadingMode("race");
+      setLoadingNext(true);
+      setTimeout(() => {
+        const result = simulateRound(1);
+        setCurrentRaceResult(result);
+        setSeasonResults([result]);
+        setCurrentRound(1);
+        setLoadingNext(false);
+        setScreen("race");
+      }, 2000);
     }
   }, [simulateRound]);
 
