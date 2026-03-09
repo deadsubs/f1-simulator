@@ -948,14 +948,13 @@ function RaceDashboard({ raceResult, round, race, drivers, focusDriverId, report
                 </div>
               );
             })()}
-            <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>RACE REPORT</span></div>
-              <div className="p-4 pl-9 relative" style={{ background: "#0e0e22" }}>
-                <span className="absolute left-3 top-4 text-3xl font-black leading-none" style={{ color: F1_RED }}>"</span>
-                {reportLoading ? (
-                  <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
-                ) : reportContent ? (
-                  <p className="text-white/90 italic text-sm leading-relaxed">{reportContent}</p>
+  <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
+  <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>RACE REPORT</span></div>
+  <div className="p-4" style={{ background: "#0e0e22" }}>
+    {reportLoading ? (
+      <div className="animate-pulse space-y-2">{[1, 0.9, 0.8, 1, 0.75].map((w, i) => <div key={i} className="h-3 rounded bg-white/15" style={{ width: (w * 100) + "%" }} />)}</div>
+    ) : reportContent ? (
+      <RaceReportBody text={reportContent} />
                 ) : (
                   <button type="button" onClick={onGenerateReport} className="px-4 py-2 rounded text-sm font-bold border transition-colors" style={{ borderColor: F1_RED, background: F1_RED + "22", color: "#fff" }}>
                     Generate report
