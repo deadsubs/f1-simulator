@@ -1342,7 +1342,11 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
           </div>
         )}
 
-       
+               </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── FINALE SCREEN ────────────────────────────────────────────────────────
 function FinaleScreen({ seasonResults, driverStandings, constructorStandings, focusDriverId, onPlayAgain }) {
