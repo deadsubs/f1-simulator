@@ -609,21 +609,15 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
             const isPole = isQ3 && row.pos === 1;
             return (
               <tr key={row.driverId} className="border-b"
-                style={{ borderColor: PANEL_BORDER, background: isPole ? "rgba(255,215,0,0.08)" : isFocus ? "rgba(225,6,0,0.12)" : undefined, opacity: row.eliminated ? 0.45 : 1 }}>
-                <td className="pl-4 py-3 w-8 text-white/40 font-mono text-xs">{row.pos}</td>
-                <td className="py-3 w-3">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
-                <td className="py-3 pl-2" colSpan={2}>
+                style={{ borderColor: PANEL_BORDER, background: isPole ? "rgba(255,215,0,0.08)" : isFocus ? "rgba(225,6,0,0.12)" : undefined, opacity: row.eliminated ? 0.5 : 1, borderLeft: row.eliminated ? "3px solid " + F1_RED : "3px solid transparent" }}>
+                <td className="pl-3 py-2.5 w-7 text-white/40 font-mono text-xs">{row.pos}</td>
+                <td className="py-2.5 w-3">{t && <span className="inline-block w-2 h-2 rounded-full" style={{ background: t.color }} />}</td>
+                <td className="py-2.5 pl-2" colSpan={2}>
                   <p className="text-white font-medium text-xs leading-tight">{d?.flag} {d?.name ?? row.driverId}</p>
                   <p className="text-white/35 leading-tight mt-0.5" style={{ fontSize: "10px" }}>{t?.name}</p>
                 </td>
-                <td className="pr-2 py-3 text-right font-mono text-xs" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
-                  {isPole && "🏆 "}{row.time}
-                </td>
-                <td className="pr-2 py-3 text-right font-mono text-xs w-20" style={{ color: "rgba(255,255,255,0.35)" }}>
-                  {row.gap ?? ""}
-                </td>
-                <td className="pr-3 py-3 w-10">
-                  {row.eliminated && <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(225,6,0,0.25)", color: F1_RED }}>OUT</span>}
+                <td className="pr-1 py-2.5 text-right font-mono w-16" style={{ fontSize: "10px", color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.7)" }}>
+                  {isPole ? "🏆" : ""}{row.gap ? row.gap : row.time}
                 </td>
               </tr>
             );
@@ -1361,12 +1355,12 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                       return (
                         <div key={row.driverId} className="flex items-center gap-1.5 px-3 py-1"
                           style={{ background: isFocus ? "rgba(225,6,0,0.1)" : undefined }}>
-                          <span className="text-xs font-mono w-5 text-white/40">{i + 1}</span>
-                          {t && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: t.color }} />}
-                          <span className="flex-1 text-xs truncate" style={{ color: isFocus ? "#fff" : "rgba(255,255,255,0.75)" }}>{d?.name?.split(" ").pop()}</span>
-                          {moved && <span className="text-green-400 text-xs">▲</span>}
-                          {dropped && <span className="text-red-400 text-xs">▼</span>}
-                          <span className="text-xs font-bold text-white">{row.points}</span>
+                          <span className="text-sm font-mono w-6 text-white/40">{i + 1}</span>
+                          {t && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />}
+                          <span className="flex-1 text-sm truncate" style={{ color: isFocus ? "#fff" : "rgba(255,255,255,0.85)" }}>{d?.name ?? row.driverId}</span>
+                          {moved && <span className="text-green-400 text-sm">▲</span>}
+                          {dropped && <span className="text-red-400 text-sm">▼</span>}
+                          <span className="text-sm font-bold text-white">{row.points}</span>
                         </div>
                       );
                     })}
@@ -1379,10 +1373,10 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                       const t = getTeam(TEAMS, row.teamId);
                       return (
                         <div key={row.teamId} className="flex items-center gap-1.5 px-3 py-1">
-                          <span className="text-xs font-mono w-5 text-white/40">{i + 1}</span>
-                          {t && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: t.color }} />}
-                          <span className="flex-1 text-xs truncate text-white/75">{t?.name ?? row.teamId}</span>
-                          <span className="text-xs font-bold text-white">{row.points}</span>
+                          <span className="text-sm font-mono w-6 text-white/40">{i + 1}</span>
+                          {t && <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: t.color }} />}
+                          <span className="flex-1 text-sm truncate text-white/85">{t?.name ?? row.teamId}</span>
+                          <span className="text-sm font-bold text-white">{row.points}</span>
                         </div>
                       );
                     })}
@@ -1395,20 +1389,79 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
         {/* ── ANALYSIS TAB ── */}
         {activeTab === "analysis" && (
           <div className="space-y-4">
-            {raceResult.driverOfDay && (() => {
-              const d = getDriver(drivers, raceResult.driverOfDay);
-              const t = getTeam(TEAMS, d?.teamId);
-              const dotdResult = raceResult.results?.find((r) => r.driverId === raceResult.driverOfDay);
-              const qp = (raceResult.qualifyingOrder || []).indexOf(raceResult.driverOfDay) + 1;
-              return (
-                <div className="rounded-lg p-5 border-l-4 border" style={{ background: PANEL_BG, borderLeftColor: t?.color ?? F1_RED, borderColor: PANEL_BORDER }}>
-                  <p className="text-xs text-white/40 uppercase">Driver of the Day</p>
-                  <p className="text-2xl font-black text-white mt-1">{d?.flag} {d?.name}</p>
-                  <p className="text-sm mt-0.5" style={{ color: t?.color }}>{t?.name}</p>
-                  <p className="text-white/60 text-sm mt-2">+{raceResult.overtakeCount?.[raceResult.driverOfDay] || 0} positions · P{qp} → P{dotdResult?.position ?? "—"}</p>
+            {/* Top row: DOTD + race stats side by side */}
+            <div className="grid grid-cols-2 gap-4">
+              {raceResult.driverOfDay && (() => {
+                const d = getDriver(drivers, raceResult.driverOfDay);
+                const t = getTeam(TEAMS, d?.teamId);
+                const dotdResult = raceResult.results?.find((r) => r.driverId === raceResult.driverOfDay);
+                const qp = (raceResult.qualifyingOrder || []).indexOf(raceResult.driverOfDay) + 1;
+                const gained = (raceResult.overtakeCount?.[raceResult.driverOfDay] || 0);
+                return (
+                  <div className="rounded-lg p-4 border-l-4 border" style={{ background: PANEL_BG, borderLeftColor: t?.color ?? F1_RED, borderColor: PANEL_BORDER }}>
+                    <p className="text-xs text-white/40 uppercase tracking-wider">Driver of the Day</p>
+                    <p className="text-xl font-black text-white mt-1">{d?.flag} {d?.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: t?.color }}>{t?.name}</p>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      {[
+                        { label: "Quali", value: "P" + qp },
+                        { label: "Finish", value: dotdResult?.dnf ? "DNF" : "P" + (dotdResult?.position ?? "—") },
+                        { label: "Gained", value: "+" + gained },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="rounded p-2 text-center" style={{ background: "rgba(255,255,255,0.05)" }}>
+                          <p className="text-base font-black text-white">{value}</p>
+                          <p className="text-xs text-white/40 mt-0.5">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-white/30 mt-3">{dotdResult?.points ?? 0} pts scored · {raceResult.tyreStints?.[raceResult.driverOfDay]?.length ?? 1} stop strategy</p>
+                  </div>
+                );
+              })()}
+              <div className="rounded-lg p-4 border" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
+                <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Race snapshot</p>
+                <div className="space-y-2">
+                  {[
+                    { label: "Weather", value: raceResult.weather ?? "Dry" },
+                    { label: "Safety car", value: raceResult.safetyCarDeployed ? "Yes" : "No", color: raceResult.safetyCarDeployed ? "#ffcc00" : undefined },
+                    { label: "DNFs", value: (raceResult.results || []).filter((r) => r.dnf).length },
+                    { label: "Fastest lap", value: (() => { const fl = [...(raceResult.results || [])].filter(r => !r.dnf).sort((a, b) => (a.fastestLap ?? 999) - (b.fastestLap ?? 999))[0]; return fl ? getDriver(drivers, fl.driverId)?.short ?? "—" : "—"; })() },
+                    { label: "Pole sitter", value: (() => { const id = raceResult.qualifyingOrder?.[0]; return id ? (getDriver(drivers, id)?.short ?? "—") : "—"; })() },
+                  ].map(({ label, value, color }) => (
+                    <div key={label} className="flex items-center justify-between">
+                      <span className="text-xs text-white/40">{label}</span>
+                      <span className="text-xs font-bold capitalize" style={{ color: color ?? "rgba(255,255,255,0.85)" }}>{value}</span>
+                    </div>
+                  ))}
                 </div>
-              );
-            })()}
+              </div>
+            </div>
+            {/* Positions gained/lost leaderboard */}
+            <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>POSITIONS GAINED / LOST</span></div>
+              <div className="p-3 grid grid-cols-2 gap-x-6 gap-y-0.5">
+                {[...(raceResult.results || [])].map((r) => {
+                  const qualiPos = (raceResult.qualifyingOrder || []).indexOf(r.driverId) + 1;
+                  const finishPos = r.dnf ? null : r.position;
+                  const delta = (qualiPos && finishPos) ? qualiPos - finishPos : null;
+                  return { ...r, qualiPos, finishPos, delta };
+                }).sort((a, b) => (b.delta ?? -99) - (a.delta ?? -99)).map((r) => {
+                  const d = getDriver(drivers, r.driverId);
+                  const t = getTeam(TEAMS, r.teamId);
+                  const isFocus = r.driverId === focusDriverId;
+                  return (
+                    <div key={r.driverId} className="flex items-center gap-2 py-1" style={{ background: isFocus ? "rgba(225,6,0,0.08)" : undefined, borderRadius: "4px" }}>
+                      <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: t?.color ?? "#666" }} />
+                      <span className="text-xs flex-1 truncate" style={{ color: isFocus ? "#fff" : "rgba(255,255,255,0.7)" }}>{d?.short ?? d?.name?.split(" ").pop()}</span>
+                      <span className="text-xs text-white/30">P{r.qualiPos}→{r.dnf ? "DNF" : "P" + r.finishPos}</span>
+                      <span className="text-xs font-bold w-8 text-right" style={{ color: r.delta === null ? "rgba(255,255,255,0.2)" : r.delta > 0 ? "#4ade80" : r.delta < 0 ? "#f87171" : "rgba(255,255,255,0.4)" }}>
+                        {r.delta === null ? "DNF" : r.delta > 0 ? "+" + r.delta : r.delta === 0 ? "=" : r.delta}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
               <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>
               RACE REPORT</span></div>
