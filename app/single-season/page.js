@@ -253,9 +253,9 @@ const teamPairs = [];
       <div className="rounded-lg border overflow-hidden flex-1" style={{ borderColor: PANEL_BORDER }}>
         {teamPairs.map((pair, pi) => (
           <div key={pi} className={pi > 0 ? "border-t" : ""} style={{ borderColor: PANEL_BORDER }}>
-            <div className="grid grid-cols-2 divide-x" style={{ borderColor: PANEL_BORDER }}>
-              {pair.map(({ team, drivers }) => (
-                <div key={team.id}>
+            <div className="grid grid-cols-1 md:grid-cols-2 md:divide-x" style={{ borderColor: PANEL_BORDER }}>
+              {pair.map(({ team, drivers }, ti) => (
+                <div key={team.id} className={ti > 0 ? "border-t md:border-t-0" : ""} style={{ borderColor: PANEL_BORDER }}>
                   {/* Team header */}
                   <div className="px-2 py-1 flex items-center gap-1.5" style={{ background: team.color + "18" }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: team.color }} />
