@@ -249,46 +249,45 @@ const teamPairs = [];
         </div>
       )}
 
-      {/* Grid — 2 teams per row, 2 drivers per team */}
+     {/* Grid — 2 teams per row, dividers between teams only */}
       <div className="rounded-lg border overflow-hidden flex-1" style={{ borderColor: PANEL_BORDER }}>
         {teamPairs.map((pair, pi) => (
           <div key={pi} className={pi > 0 ? "border-t" : ""} style={{ borderColor: PANEL_BORDER }}>
             <div className="grid grid-cols-2 divide-x" style={{ borderColor: PANEL_BORDER }}>
               {pair.map(({ team, drivers }) => (
                 <div key={team.id}>
+                  {/* Team header */}
                   <div className="px-2 py-1 flex items-center gap-1.5" style={{ background: team.color + "18" }}>
                     <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: team.color }} />
                     <span className="text-xs font-bold uppercase tracking-wider truncate" style={{ color: team.color, fontSize: "10px" }}>{team.name}</span>
                   </div>
-                  <div className="divide-y" style={{ borderColor: PANEL_BORDER }}>
+                  {/* Both drivers side by side */}
+                  <div className="grid grid-cols-2 divide-x" style={{ borderColor: PANEL_BORDER }}>
                     {drivers.map((d) => {
                       const isFocus = d.id === focusDriverId;
                       const isSwapSource = swapSource === d.id;
                       return (
                         <button key={d.id} type="button" onClick={() => handleGridDriverClick(d)}
-                          className="w-full flex items-center gap-1.5 px-2 py-1.5 text-left transition-all hover:bg-white/5"
+                          className="flex flex-col px-2 py-1.5 text-left transition-all hover:bg-white/5 w-full"
                           style={{ background: isSwapSource ? F1_RED + "18" : isFocus ? team.color + "18" : undefined, outline: "2px solid " + (isSwapSource ? F1_RED : isFocus ? team.color : "transparent"), outlineOffset: "-2px" }}>
-                          <span className="font-black shrink-0 w-5 text-center" style={{ color: team.color, fontSize: "11px" }}>{d.number}</span>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-bold text-white leading-tight truncate">{d.flag} {d.short}</p>
+                          {/* Number + name row */}
+                          <div className="flex items-center gap-1.5 w-full">
+                            <span className="font-black shrink-0 w-5 text-center" style={{ color: team.color, fontSize: "11px" }}>{d.number}</span>
+                            <p className="text-xs font-bold text-white leading-tight truncate flex-1">{d.flag} {d.short}</p>
+                            {isSwapSource ? <span className="text-xs shrink-0" style={{ color: F1_RED }}>⇄</span> : isFocus ? <span className="text-xs shrink-0" style={{ color: team.color }}>●</span> : null}
                           </div>
-                          {isSwapSource ? <span className="text-xs" style={{ color: F1_RED }}>⇄</span> : isFocus ? <span className="text-xs" style={{ color: team.color }}>●</span> : null}
+                          {/* Stats below name */}
+                          <div className="flex gap-2 mt-1 pl-6">
+                            {[["P", d.pace], ["C", d.consistency], ["W", d.wetWeather]].map(([lbl, val]) => (
+                              <div key={lbl} className="flex items-center gap-0.5">
+                                <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>{lbl}</span>
+                                <span style={{ fontSize: "10px", fontWeight: 700, color: val >= 88 ? "#4ade80" : val >= 78 ? "#facc15" : val >= 68 ? "#f97316" : "#f87171" }}>{val}</span>
+                              </div>
+                            ))}
+                          </div>
                         </button>
                       );
                     })}
-                  </div>
-                  {/* Per-driver stats row */}
-                  <div className="grid divide-x" style={{ gridTemplateColumns: "repeat(" + drivers.length + ", 1fr)", borderColor: PANEL_BORDER, borderTop: "1px solid " + PANEL_BORDER }}>
-                    {drivers.map((d) => (
-                      <div key={d.id + "-stats"} className="px-2 py-1 flex gap-2" style={{ background: "rgba(0,0,0,0.2)" }}>
-                        {[["P", d.pace], ["C", d.consistency], ["W", d.wetWeather]].map(([lbl, val]) => (
-                          <div key={lbl} className="flex items-center gap-1">
-                            <span style={{ color: "rgba(255,255,255,0.3)", fontSize: "9px" }}>{lbl}</span>
-                            <span className="text-xs font-bold" style={{ color: val >= 88 ? "#4ade80" : val >= 78 ? "#facc15" : val >= 68 ? "#f97316" : "#f87171" }}>{val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
                   </div>
                 </div>
               ))}
