@@ -610,17 +610,17 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
             return (
               <tr key={row.driverId} className="border-b"
                 style={{ borderColor: PANEL_BORDER, background: isPole ? "rgba(255,215,0,0.08)" : isFocus ? "rgba(225,6,0,0.12)" : undefined, opacity: row.eliminated ? 0.45 : 1 }}>
-                <td className="pl-4 py-2 w-8 text-white/40 font-mono text-xs">{row.pos}</td>
-                <td className="py-2 w-3">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
-                <td className="py-2 pl-2 text-white font-medium">{d?.flag} {d?.name ?? row.driverId}</td>
-                <td className="py-2 text-white/40 text-xs">{t?.name}</td>
-                <td className="pr-2 py-2 text-right font-mono text-xs" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
+                <td className="pl-4 py-3 w-8 text-white/40 font-mono text-xs">{row.pos}</td>
+                <td className="py-3 w-3">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
+                <td className="py-3 pl-2 text-white font-medium text-xs">{d?.flag} {d?.short ?? d?.name ?? row.driverId}</td>
+                <td className="py-3 text-white/40 text-xs hidden sm:table-cell">{t?.shortName ?? t?.name}</td>
+                <td className="pr-2 py-3 text-right font-mono text-xs" style={{ color: isPole ? GOLD : row.eliminated ? "rgba(255,255,255,0.25)" : "rgba(255,255,255,0.8)" }}>
                   {isPole && "🏆 "}{row.time}
                 </td>
-                <td className="pr-2 py-2 text-right font-mono text-xs w-20" style={{ color: "rgba(255,255,255,0.35)" }}>
+                <td className="pr-2 py-3 text-right font-mono text-xs w-20" style={{ color: "rgba(255,255,255,0.35)" }}>
                   {row.gap ?? ""}
                 </td>
-                <td className="pr-3 py-2 w-10">
+                <td className="pr-3 py-3 w-10">
                   {row.eliminated && <span className="text-xs px-1.5 py-0.5 rounded font-bold" style={{ background: "rgba(225,6,0,0.25)", color: F1_RED }}>OUT</span>}
                 </td>
               </tr>
@@ -635,6 +635,8 @@ function QualiSessionPanel({ label, rows, drivers, teams, focusDriverId, isQ3 })
 // ─── INTERACTIVE LAP CHART ────────────────────────────────────────────────
 function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, drivers, teams, focusDriverId, numCheckpoints }) {
   const [hidden, setHidden] = useState(new Set());
+  const [crosshair, setCrosshair] = useState(null);
+  const svgRef = useRef(null);
   const toggle = (id) => setHidden((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const getColor = (id) => getTeam(teams, getDriver(drivers, id)?.teamId)?.color ?? "#666";
   const width = 760, height = 240;
@@ -645,6 +647,25 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
     const pts = cps.map((pos, i) => [pad.left + (i / (numCheckpoints - 1)) * cw, pad.top + (Math.min(pos, maxPos) / maxPos) * ch]);
     return { id, pts, color: getColor(id), isFocus: id === focusDriverId };
   });
+
+  const handleMouseMove = (e) => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = width / rect.width;
+    const mx = (e.clientX - rect.left) * scaleX;
+    const rawIdx = (mx - pad.left) / cw * (numCheckpoints - 1);
+    const idx = Math.round(Math.max(0, Math.min(numCheckpoints - 1, rawIdx)));
+    const snapX = pad.left + (idx / (numCheckpoints - 1)) * cw;
+    const visible = qualifyingOrder.filter((id) => !hidden.has(id));
+    const positions = visible.map((id) => {
+      const pos = (positionCheckpoints[id] || [])[idx] ?? 99;
+      return { id, pos };
+    }).sort((a, b) => a.pos - b.pos);
+    const lapLabel = idx === 0 ? "START" : idx === numCheckpoints - 1 ? "FINISH" : "L" + Math.round((idx / (numCheckpoints - 1)) * 57);
+    setCrosshair({ x: snapX, idx, lapLabel, positions });
+  };
+
   return (
     <div>
       <div className="px-4 pt-3 pb-2 border-b flex flex-wrap gap-1.5 items-center" style={{ borderColor: PANEL_BORDER }}>
@@ -663,8 +684,9 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
           );
         })}
       </div>
-      <div className="p-4" style={{ height: "280px" }}>
-        <svg width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible">
+      <div className="relative p-4" style={{ height: "280px" }}>
+        <svg ref={svgRef} width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible cursor-crosshair"
+          onMouseMove={handleMouseMove} onMouseLeave={() => setCrosshair(null)}>
           {[1, 5, 10, 15, 20].map((p) => (
             <g key={p}>
               <line x1={pad.left} y1={pad.top + (p / maxPos) * ch} x2={pad.left + cw} y2={pad.top + (p / maxPos) * ch} stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
@@ -688,7 +710,30 @@ function InteractiveLapChart({ positionCheckpoints, qualifyingOrder, results, dr
               </g>
             );
           })}
+          {crosshair && (
+            <line x1={crosshair.x} y1={pad.top} x2={crosshair.x} y2={pad.top + ch} stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="3 3" />
+          )}
         </svg>
+        {crosshair && (
+          <div className="absolute top-2 pointer-events-none z-10 rounded-lg border shadow-xl text-xs"
+            style={{ left: crosshair.x / width * 100 + "%", transform: crosshair.x > width * 0.6 ? "translateX(-110%)" : "translateX(8px)", background: "#0d0d1a", borderColor: "rgba(255,255,255,0.15)", minWidth: "130px" }}>
+            <div className="px-3 py-1.5 border-b font-black tracking-widest text-white/50 uppercase" style={{ borderColor: "rgba(255,255,255,0.1)", fontSize: "10px" }}>{crosshair.lapLabel}</div>
+            <div className="py-1">
+              {crosshair.positions.map(({ id, pos }, i) => {
+                const d = getDriver(drivers, id);
+                const color = getColor(id);
+                const isFocus = id === focusDriverId;
+                return (
+                  <div key={id} className="flex items-center gap-2 px-3 py-0.5" style={{ background: isFocus ? "rgba(225,6,0,0.15)" : undefined }}>
+                    <span className="font-mono text-white/40 w-4 text-right">{i + 1}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: color }} />
+                    <span style={{ color: isFocus ? "#fff" : "rgba(255,255,255,0.75)", fontWeight: isFocus ? 700 : 400 }}>{d?.short ?? id}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -781,10 +826,9 @@ function RaceResultsTable({ results, drivers, teams, focusDriverId }) {
               <td className="py-2 pr-1">{t && <span className="inline-block w-2.5 h-2.5 rounded-full" style={{ background: t.color }} />}</td>
               <td className="py-2 font-medium" style={{ color: r.dnf ? "rgba(255,255,255,0.4)" : "#fff" }}>
                 {d?.flag} {d?.name ?? r.driverId}
-                {r.dnf && <span className="ml-2 text-xs text-red-400">{r.dnfReason ?? "DNF"}</span>}
               </td>
               <td className="py-2 text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>{t?.name}</td>
-               <td className="py-2 text-right text-xs font-mono" style={{ color: r.position === 1 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)" }}>{r.dnf ? "" : r.position === 1 ? "WINNER" : r.gap ?? ""}</td>
+               <td className="py-2 text-right text-xs font-mono" style={{ color: r.dnf ? "#f87171" : r.position === 1 ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.6)" }}>{r.dnf ? (r.dnfReason ?? "DNF") : r.position === 1 ? "WINNER" : r.gap ?? ""}</td>
               <td className="pr-4 py-2 text-right font-bold" style={{ color: r.points > 0 ? "#fff" : "rgba(255,255,255,0.3)" }}>{r.dnf ? "" : (r.points ?? 0)}</td>
             </tr>
           );
@@ -988,33 +1032,38 @@ function ChampionshipGapChart({ cumulativePoints, driverStandings, drivers, seas
   const n = seasonResults.length;
   if (!leaderId || n === 0) return null;
 
-  const width = 700, height = 200;
-  const pad = { top: 16, right: 80, bottom: 28, left: 44 };
+  const CAP = 75;
+  const width = 700, height = 220;
+  const pad = { top: 20, right: 80, bottom: 28, left: 44 };
   const cw = width - pad.left - pad.right;
   const ch = height - pad.top - pad.bottom;
+  const zeroY = pad.top + ch / 2;
 
+  // gap = this driver pts minus leader pts (so leader=0, others negative)
   const gaps = top5.map((s) => ({
     driverId: s.driverId,
     color: getTeam(TEAMS, s.teamId)?.color ?? "#888",
     points: (cumulativePoints[s.driverId] || []).map((pts, i) => {
       const leaderPts = (cumulativePoints[leaderId] || [])[i] ?? 0;
-      return leaderPts - pts;
+      return Math.max(-CAP, Math.min(CAP, pts - leaderPts));
     }),
   }));
 
-  const maxGap = Math.max(...gaps.flatMap((g) => g.points), 10);
-  const gridStep = maxGap <= 50 ? 10 : maxGap <= 150 ? 25 : maxGap <= 300 ? 50 : 100;
-  const gridLines = [];
-  for (let v = 0; v <= maxGap; v += gridStep) gridLines.push(v);
+  const gridVals = [-CAP, -50, -25, 0, 25, 50, CAP];
 
   return (
     <svg width="100%" height={height} viewBox={"0 0 " + width + " " + height} className="overflow-visible">
-      {gridLines.map((v) => {
-        const y = pad.top + (v / maxGap) * ch;
+      {gridVals.map((v) => {
+        const y = zeroY - (v / CAP) * (ch / 2);
+        const isZero = v === 0;
         return (
           <g key={v}>
-            <line x1={pad.left} y1={y} x2={pad.left + cw} y2={y} stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
-            <text x={pad.left - 6} y={y + 4} fill="rgba(255,255,255,0.4)" fontSize="9" textAnchor="end">{v}</text>
+            <line x1={pad.left} y1={y} x2={pad.left + cw} y2={y}
+              stroke={isZero ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.06)"}
+              strokeWidth={isZero ? 1.5 : 1} />
+            <text x={pad.left - 6} y={y + 4} fill={isZero ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.35)"} fontSize="9" textAnchor="end">
+              {v > 0 ? "+" + v : v}
+            </text>
           </g>
         );
       })}
@@ -1024,7 +1073,7 @@ function ChampionshipGapChart({ cumulativePoints, driverStandings, drivers, seas
         const isLeader = driverId === leaderId;
         const pts = points.map((gap, i) => {
           const x = pad.left + (i / Math.max(n - 1, 1)) * cw;
-          const y = pad.top + (Math.min(gap, maxGap) / maxGap) * ch;
+          const y = zeroY - (gap / CAP) * (ch / 2);
           return [x, y];
         });
         const path = "M " + pts.map((p) => p[0] + "," + p[1]).join(" L ");
@@ -1292,7 +1341,8 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                 <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>TYRE STRATEGY</span></div>
                 <TyreStrategy tyreStints={raceResult.tyreStints || {}} results={raceResult.results} drivers={drivers} teams={TEAMS} focusDriverId={focusDriverId} />
               </div>
-              {/* Championship standings — two cols */}
+              {/* Championship standings — two cols, full width below */}
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
                   <div className="px-3 py-2 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>DRIVERS</span></div>
@@ -1334,7 +1384,6 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                       );
                     })}
                   </div>
-                </div>
               </div>
             </div>
           </div>
@@ -1566,7 +1615,7 @@ function FinaleScreen({ seasonResults, driverStandings, constructorStandings, fo
               </table>
             </div>
             <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
-              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CHAMPIONSHIP GAP — TOP 5 TO LEADER</span></div>
+              <div className="px-4 py-2.5 border-b" style={{ borderColor: PANEL_BORDER }}><span className="text-xs font-black tracking-widest" style={{ color: F1_RED }}>CHAMPIONSHIP — POINTS RELATIVE TO LEADER</span></div>
               <div className="p-4">
                 <ChampionshipGapChart cumulativePoints={cumulativePoints} driverStandings={driverStandings} drivers={drivers} seasonResults={seasonResults} />
               </div>
