@@ -1344,6 +1344,7 @@ function RaceRevealScreen({ raceResult, round, race, driverStandings, constructo
                 <TyreStrategy tyreStints={raceResult.tyreStints || {}} results={raceResult.results} drivers={drivers} teams={TEAMS} focusDriverId={focusDriverId} />
               </div>
                  </div>
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg border overflow-hidden" style={{ background: PANEL_BG, borderColor: PANEL_BORDER }}>
